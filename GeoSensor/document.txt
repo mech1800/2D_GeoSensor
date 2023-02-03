@@ -1,0 +1,53 @@
+深層学習モデルのデータおよび学習に関するコード群
+
+|code　　　　　　　　　　　　　　 モデル側
+　|result　　　　　　　　　　　　 学習結果
+　　|force　　　　　　　　　　　　外部荷重に関する学習結果
+    　|image　　　　　　　　　　　学習結果の画像
+　　　　|tr_tabel　　　　　　　　 学習用データについて
+　　　　|va_table　　　　　　　　 評価用データについて
+　　　|loss.png　　　　　　　　　 損失関数の推移
+　　　|model.pth　　　　　　　　　学習済みモデル
+　　　|sh_result.py　　　　　　　 データを学習済みモデルに入力した結果をimageに作成する
+　　　|tr_data.npy　　　　　　　　学習用データ
+　　　|tr_label.py　　　　　　　  学習用ラベルデータ
+　　　|va_data.npy　　　　　　　　評価用データ
+　　　|va_label.npy　　　　　　　 評価用ラベルデータ
+　　|stress　　　　　　　　　　　 応力に関する学習結果
+    　|image　　　　　　　　　　　学習結果の画像
+　　　　|tr_tabel　　　　　　　　 学習用データについて
+　　　　|va_table　　　　　　　　 評価用データについて
+      |cal_metrics.py             各種定量指標を計算する
+　　　|loss.png　　　　　　　　　 損失関数の推移
+　　　|metrics.txt                各種定量指標の計算結果
+　　　|model.pth　　　　　　　　　学習済みモデル
+　　　|sh_result.py　　　　　　　 データを学習済みモデルに入力した結果をimageに作成する
+　　　|tr_data.npy　　　　　　　　学習用データ
+　　　|tr_label.py　　　　　　　  学習用ラベルデータ
+　　　|va_data.npy　　　　　　　　評価用データ
+　　　|va_label.npy　　　　　　　 評価用ラベルデータ
+　|dataset.py　　　　　　　　　　 pytorchのmodel用のdataset
+　|force.py　　　　　　　　　　　 外部荷重に関する学習プログラム
+　|model.py　　　　　　　　　　　 CNNモデル
+　|stress.py　　　　　　　　　　　応力に関する学習プログラム
+
+|data　　　　　　　　　　　　　　 データセット側
+　|csv_file　　　　　　　　　　　 Abaqusの出力
+　|dataset　　　　　　　 　　　　 水増し後のデータセット
+　　|contact.npy　　　　 　　　　 接触データセット
+　　|force.npy　　　　　　   　　 外力データセット
+　　|geometry.npy　　　　　 　　　変形後形状データセット
+　　|pre_geometry.npy　　　　 　　変形前形状データセット
+　　|stress.npy　　　　　　　 　　応力データセット
+　|image　　　　　　　　　   　　 データセットの画像
+　　|stress　　　　　　 　　　　　ラベルが応力の場合
+　　|force　　　　　　　　　　 　 ラベルが外力の場合
+　|original_dataset　　 　　　　　水増し前のデータセット
+　　|contact.npy　　　　　　 　　 接触データセット
+　　|force.npy　　　　 　　　　　 外力データセット
+　　|geometry.npy　　　　 　　　　変形後形状データセット
+　　|pre_geometry.npy　　 　　　　変形前形状データセット
+　　|stress.npy　　　　　　　 　　応力データセット
+　|ag_dataset.py　　　　 　　　　 データセットを水増しする
+　|mk_dataset.py　　　　 　　　　 csv_fileからデータセットを作成する
+　|mk_image.py　　　　　　　 　　 データセットの画像を作成する
