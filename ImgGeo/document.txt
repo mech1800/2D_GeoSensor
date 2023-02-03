@@ -1,0 +1,11 @@
+画像から深層学習モデルに入力する特徴量を生成するコード群
+
+|Object
+　|result                         テスト用の画像から構造物を抽出した結果
+　|get_object.py                  構造物のラベルを抽出する
+　|test.jpg                       テスト用の画像
+|Person                           人を対象
+　|model.py                       人のラベルを抽出する
+　|test.jpg                       テスト用の画像
+|SnapShot                         スナップショット
+　|Extract_pre_geometry.py        不変接触位置を選択して抽出する
