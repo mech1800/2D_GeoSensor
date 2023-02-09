@@ -41,21 +41,23 @@ for i in range(10):
 data = np.stack([pre_geometry_dataset, geometry_dataset, contact_dataset], axis=1)
 label = np.reshape(force_dataset, [force_dataset.shape[0], -1, force_dataset.shape[1], force_dataset.shape[2]])
 
-
+'''
 # テストデータを9にする(前から順番に9:1にバリデーション → シャッフル)
 tr_data = data[0:int(len(data)*0.9)]
 tr_label = label[0:int(len(data)*0.9)]
 va_data = data[int(len(data)*0.9):]
 va_label = label[int(len(data)*0.9):]
 
-p = np.random.permutation(len(tr_data))
-tr_data = tr_data[p]
-tr_label = tr_label[p]
+'''
 
-p = np.random.permutation(len(va_data))
-va_data = va_data[p]
-va_label = va_label[p]
+'''
+# テストデータを1にする(前から順番に1:9にバリデーション → シャッフル)
+tr_data = data[int(len(data)*0.1):]
+tr_label = label[int(len(data)*0.1):]
+va_data = data[0:int(len(data)*0.1)]
+va_label = label[0:int(len(data)*0.1)]
 
+'''
 
 '''
 # テストデータを8にする
@@ -63,6 +65,12 @@ tr_data = np.concatenate([data[:int(len(data)*0.8)],data[int(len(data)*0.9):]])
 tr_label = np.concatenate([label[:int(len(data)*0.8)],label[int(len(data)*0.9):]])
 va_data = data[int(len(data)*0.8):int(len(data)*0.9)]
 va_label = label[int(len(data)*0.8):int(len(data)*0.9)]
+'''
+
+
+# シャッフル → 9:1にバリデーション
+tr_data, va_data, tr_label, va_label = train_test_split(data, label, test_size=0.1, random_state=1, shuffle=True)
+
 
 p = np.random.permutation(len(tr_data))
 tr_data = tr_data[p]
@@ -71,12 +79,6 @@ tr_label = tr_label[p]
 p = np.random.permutation(len(va_data))
 va_data = va_data[p]
 va_label = va_label[p]
-'''
-
-'''
-# シャッフル → 9:1にバリデーション
-tr_data, va_data, tr_label, va_label = train_test_split(data, label, test_size=0.1, random_state=1, shuffle=True)
-'''
 
 # resultに保存する
 np.save('result/force/tr_data', tr_data)
