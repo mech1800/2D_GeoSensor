@@ -11,8 +11,25 @@ from ImgGeo.Object.get_object import super_pixel, clustering,cluster_to_object, 
 from ImgGeo.Person.model import Extract_person
 from ImgGeo.SnapShot.get_fixed_contact import get_fixed_contact
 
-from GeoSensor.code.model import Encoder_Decoder_stress, Encoder_Decoder_force
+from GeoSensor.code.model import Encoder_Decoder_stress, Encoder_Decoder_force, Encoder_Decoder_force_
 
+'''
+変数の説明
+　img_snap：変形前の画像
+　img：変形中の画像
+　input_image：変形後の画像（imgとはrgbの順番が違う）
+　points：get_fixed_contactの内部で使用される変数
+　pre_geometry：変形前の物体ラベル(0は空間セル,1は物体セルを表す)
+　fixed_contact：床との接触点のラベル(0は空間セル,1は接触セルを表す)
+　person_label：変形中の人間のラベル(0は空間セル,1は人間セルを表す)
+　geometry：変形中の物体ラベル(0は空間セル,1は物体セルを表す)
+　unfixed_contact：人間との接触点のラベル(0は空間セル,1は接触セルを表す)
+　contact：すべての接触点のラベル(0は空間セル,1は接触セルを表す)
+　label：person_labelとgeometryを足したもの(0は空間セル,1は人間セル,2は物体ラベル,3は人間セルと物体セルを表す)
+　model：形状変形特徴量から物理量を指定する学習済み深層学習モデル
+　input：深層学習モデルへの入力[[変形前の物体ラベル],[変形中の物体ラベル],[接触点のラベル]]
+　output：深層学習モデルの出力
+'''
 
 # 任意のnumpy画像を64×64にリサイズする(utilityディレクトリを作成して移動させたい)
 def resize_64(image):
@@ -110,7 +127,7 @@ input = input.unsqueeze(dim=0)
 
 
 # modelに入力
-model = Encoder_Decoder_force(inputDim=3, outputDim=1)
+model = Encoder_Decoder_force_(inputDim=3, outputDim=1)
 model.load_state_dict(torch.load('../GeoSensor/code/result/force/model_weight.pth'))
 model = model.to(device)
 

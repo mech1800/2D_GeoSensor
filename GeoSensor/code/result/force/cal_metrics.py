@@ -5,12 +5,18 @@ import torch.nn as nn
 import sys
 sys.path.append('../../')
 
+from GeoSensor.code.model import Encoder_Decoder_stress, Encoder_Decoder_force, Encoder_Decoder_force_
+
 # デバイスの設定
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device_cpu = torch.device("cpu")
 
 # 学習済みモデルをロードする
-model = torch.load('./model.pth')
+# model = torch.load('./model.pth')
+# model = model.to(device)
+
+model = Encoder_Decoder_force(inputDim=3, outputDim=1)
+model.load_state_dict(torch.load('./model_weight.pth'))
 model = model.to(device)
 
 # dataをloadする(float32→tensor→to.device)

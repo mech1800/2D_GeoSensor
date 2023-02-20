@@ -5,18 +5,18 @@ from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from dataset import MyDataset
 import torch.optim as optim
-from model import Encoder_Decoder_force
+from model import Encoder_Decoder_force, Encoder_Decoder_force_
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-
+# 強フィルター
 # デバイスの設定
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # パラメータ
 batchsize = 32
 lr = 0.001
-epochs = 100
+epochs = 50
 
 
 # 0~9のdatasetをloadする
@@ -38,8 +38,10 @@ for i in range(10):
 
 
 # dataを[12800(=1280×10),3,64,64],labelを[12800(=1280×10),1,64,64]に変形
-data = np.stack([pre_geometry_dataset, geometry_dataset, contact_dataset], axis=1)
 label = np.reshape(force_dataset, [force_dataset.shape[0], -1, force_dataset.shape[1], force_dataset.shape[2]])
+unfixed_contact = label.astype(np.bool).astype(np.float64)
+unfixed_contact = np.squeeze(unfixed_contact)
+data = np.stack([pre_geometry_dataset, geometry_dataset, contact_dataset, unfixed_contact], axis=1)
 
 '''
 # テストデータを9にする(前から順番に9:1にバリデーション → シャッフル)
@@ -47,16 +49,14 @@ tr_data = data[0:int(len(data)*0.9)]
 tr_label = label[0:int(len(data)*0.9)]
 va_data = data[int(len(data)*0.9):]
 va_label = label[int(len(data)*0.9):]
-
 '''
 
 '''
-# テストデータを1にする(前から順番に1:9にバリデーション → シャッフル)
+# テストデータを0にする(前から順番に1:9にバリデーション → シャッフル)
 tr_data = data[int(len(data)*0.1):]
 tr_label = label[int(len(data)*0.1):]
 va_data = data[0:int(len(data)*0.1)]
 va_label = label[0:int(len(data)*0.1)]
-
 '''
 
 '''
@@ -134,7 +134,8 @@ def valid(model, device, criterion, validloader):
 
 
 # モデル，評価関数，最適化関数を呼び出す
-model = Encoder_Decoder_force(inputDim=3, outputDim=1).to(device)
+model = Encoder_Decoder_force_(inputDim=3, outputDim=1).to(device)
+# model = Encoder_Decoder_force(inputDim=3, outputDim=1).to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(),lr=lr)
 
@@ -166,3 +167,26 @@ ax.set_ylabel('MSE_loss')
 ax.legend(loc='upper right')
 fig.savefig('result/force/loss.png')
 plt.show()
+
+
+# 弱フィルター
+'''
+# dataを[12800(=1280×10),3,64,64],labelを[12800(=1280×10),1,64,64]に変形
+data = np.stack([pre_geometry_dataset, geometry_dataset, contact_dataset], axis=1)
+label = np.reshape(force_dataset, [force_dataset.shape[0], -1, force_dataset.shape[1], force_dataset.shape[2]])
+
+# モデル，評価関数，最適化関数を呼び出す
+model = Encoder_Decoder_force(inputDim=3, outputDim=1).to(device)
+'''
+
+# 強フィルター
+'''
+# dataを[12800(=1280×10),3,64,64],labelを[12800(=1280×10),1,64,64]に変形
+label = np.reshape(force_dataset, [force_dataset.shape[0], -1, force_dataset.shape[1], force_dataset.shape[2]])
+unfixed_contact = label.astype(np.bool).astype(np.float64)
+unfixed_contact = np.squeeze(unfixed_contact)
+data = np.stack([pre_geometry_dataset, geometry_dataset, contact_dataset, unfixed_contact], axis=1)
+
+# モデル，評価関数，最適化関数を呼び出す
+model = Encoder_Decoder_force_(inputDim=3, outputDim=1).to(device)
+'''

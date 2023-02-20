@@ -90,7 +90,7 @@ class Encoder_Decoder_stress(nn.Module):
         return out
 
 
-# force用のモデル
+# force用のモデル(弱フィルター)
 class Encoder_Decoder_force(nn.Module):
     def __init__(self, inputDim, outputDim):
         super(Encoder_Decoder_force,  self).__init__()
@@ -131,6 +131,48 @@ class Encoder_Decoder_force(nn.Module):
         out = self.conv6(out)
 
         out *= x[:, 2:3, :, :]
+
+        return out
+
+
+# force用のモデル(強フィルター)
+class Encoder_Decoder_force_(nn.Module):
+    def __init__(self, inputDim, outputDim):
+        super(Encoder_Decoder_force_,  self).__init__()
+
+        # encoder
+        self.conv1 = nn.Sequential(nn.Conv2d(inputDim, 32, kernel_size=9, stride=1, padding=4), nn.BatchNorm2d(32), nn.LeakyReLU())
+        self.conv2 = nn.Sequential(nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1), nn.BatchNorm2d(64), nn.LeakyReLU())
+        self.conv3 = nn.Sequential(nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1), nn.BatchNorm2d(128), nn.LeakyReLU())
+
+        # resnet
+        self.RN1 = BasicBlock(128, 128)
+        self.RN2 = BasicBlock(128, 128)
+        self.RN3 = BasicBlock(128, 128)
+        self.RN4 = BasicBlock(128, 128)
+        self.RN5 = BasicBlock(128, 128)
+
+        # decoder
+        self.conv4 = nn.Sequential(nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1), nn.BatchNorm2d(64), nn.LeakyReLU())
+        self.conv5 = nn.Sequential(nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1), nn.BatchNorm2d(32), nn.LeakyReLU())
+        self.conv6 = nn.Sequential(nn.Conv2d(32, outputDim, kernel_size=9, stride=1, padding=4), nn.LeakyReLU())
+
+    def forward(self, x):
+        # encoder
+        out = self.conv1(x[:, 0:3, :, :])
+        out = self.conv2(out)
+        out = self.conv3(out)
+        # resnet
+        out = self.RN1(out)
+        out = self.RN2(out)
+        out = self.RN3(out)
+        out = self.RN4(out)
+        out = self.RN5(out)
+        # decoder
+        out = self.conv4(out)
+        out = self.conv5(out)
+        out = self.conv6(out)
+        out *= x[:, 3:4, :, :]
 
         return out
 
