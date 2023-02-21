@@ -2,6 +2,8 @@ from PIL import Image
 import cv2
 import torch
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 
 import sys
@@ -109,6 +111,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 pre_geometry = resize_64(pre_geometry)   # 実際はスナップショットの画像を入力する
 geometry = resize_64(geometry)
 contact = resize_64(contact)
+unfixed_contact = resize_64(unfixed_contact)   # strong filterの場合のみ
 
 plt.imshow(pre_geometry)
 plt.show()
@@ -118,28 +121,56 @@ plt.imshow(contact)
 plt.show()
 
 pre_geometry = torch.from_numpy(pre_geometry.astype(np.float32)).to(device)   # 実際はスナップショットの形状を入力する
-# pre_geometry = Extract_pre_geometry(input_image)
 geometry = torch.from_numpy(geometry.astype(np.float32)).to(device)
 contact = torch.from_numpy(contact.astype(np.float32)).to(device)
+unfixed_contact = torch.from_numpy(unfixed_contact.astype(np.float32)).to(device)   # strong filterの場合のみ
 
-input = torch.stack([pre_geometry,geometry,contact], dim=0)
+# input = torch.stack([pre_geometry,geometry,contact], dim=0)   # weak filter
+input = torch.stack([pre_geometry,geometry,contact,unfixed_contact], dim=0)   # strong filter
 input = input.unsqueeze(dim=0)
 
 
 # modelに入力
-model = Encoder_Decoder_force_(inputDim=3, outputDim=1)
+# model = Encoder_Decoder_force(inputDim=3, outputDim=1)   # weak filter
+model = Encoder_Decoder_force_(inputDim=3, outputDim=1)   # strong filter
 model.load_state_dict(torch.load('../GeoSensor/code/result/force/model_weight.pth'))
+# model.load_state_dict(torch.load('../GeoSensor/code/result/force/model_weight.pth', map_location=torch.device('cpu')))   #GPUを使う場合は外す
 model = model.to(device)
 
 # model = torch.load('../GeoSensor/code/result/force/model.pth')
 # model = model.to(device)
 
 output = model(input)
-plt.imshow(output[0,0,:,:].to('cpu').detach().numpy())
+output = output[0,0,:,:].to('cpu').detach().numpy()
+
+
+# 出力を表示する
+plt.imshow(output)
+plt.show()
+
+# 出力を構造物に重ね合わせて表示する
+masked_output = np.ma.masked_where(output == 0, output)
+cmap = plt.cm.jet
+cmap.set_bad((0,0,0,0))  # 無効な値に対応する色
+
+fig, ax = plt.subplots()
+im = ax.imshow(geometry.to('cpu').detach().numpy(), cmap='gray_r', alpha=0.6, vmin=0, vmax=1)
+im = ax.imshow(masked_output, cmap=cm.jet, alpha=1, vmin=0, vmax=40)
+
+divider = make_axes_locatable(ax)
+cax = divider.append_axes('right', size='5%', pad=0.05)
+cbar = fig.colorbar(im, cax)
+cbar.ax.tick_params(labelsize=5)
+cbar.ax.set_ylim(0, 40)
+
+ax.set_xticks([])
+ax.set_yticks([])
+
+ax.set_ylabel('output')
+
 plt.show()
 
 '''
 やること
-手との接触位置でフィルタリングする方法を考える
 リアルタイムで動画を入力および出力できるようにする（3月）
 '''
