@@ -15,7 +15,8 @@ device_cpu = torch.device("cpu")
 # model = torch.load('./model.pth')
 # model = model.to(device)
 
-model = Encoder_Decoder_force(inputDim=3, outputDim=1)
+# model = Encoder_Decoder_force(inputDim=3, outputDim=1)
+model = Encoder_Decoder_force_(inputDim=3, outputDim=1)
 model.load_state_dict(torch.load('./model_weight.pth'))
 model = model.to(device)
 
