@@ -1,61 +1,51 @@
 import numpy as np
 import torch
-import torch.nn as nn
+import os
 
 import sys
 sys.path.append('../../')
+from GeoSensor.code.model import Encoder_Decoder_force, Encoder_Decoder_force_
 
-from GeoSensor.code.model import Encoder_Decoder_stress, Encoder_Decoder_force, Encoder_Decoder_force_
-
-# デバイスの設定
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device_cpu = torch.device("cpu")
-
-# 学習済みモデルをロードする
-# model = torch.load('./model.pth')
-# model = model.to(device)
-
-# model = Encoder_Decoder_force(inputDim=3, outputDim=1)
-model = Encoder_Decoder_force_(inputDim=3, outputDim=1)
-model.load_state_dict(torch.load('./model_weight.pth'))
-model = model.to(device)
-
-# dataをloadする(float32→tensor→to.device)
-tr_data = torch.from_numpy((np.load('./tr_data.npy')).astype(np.float32)).to(device)
-tr_label = torch.from_numpy((np.load('./tr_label.npy')).astype(np.float32)).to(device)
-va_data = torch.from_numpy((np.load('./va_data.npy')).astype(np.float32)).to(device)
-va_label = torch.from_numpy((np.load('./va_label.npy')).astype(np.float32)).to(device)
-
-def cal_mse(outputs,labels):
+def cal_mse(outputs, labels):
     total_mse = 0
+    total_count = 0
     for i in range(len(outputs)):
-        total_mse += np.mean((outputs[i]-labels[i])**2)
-    return total_mse/len(outputs)
+        mask = (outputs[i] > 0) & (labels[i] > 0)
+        total_mse += np.sum((outputs[i][mask] - labels[i][mask]) ** 2)
+        total_count += np.sum(mask)
+    return total_mse / total_count if total_count > 0 else 0
 
-def cal_mae(outputs,labels):
+def cal_mae(outputs, labels):
     total_mae = 0
+    total_count = 0
     for i in range(len(outputs)):
-        total_mae += np.mean(np.abs(outputs[i]-labels[i]))
-    return total_mae/len(outputs)
+        mask = (outputs[i] > 0) & (labels[i] > 0)
+        total_mae += np.sum(np.abs(outputs[i][mask] - labels[i][mask]))
+        total_count += np.sum(mask)
+    return total_mae / total_count if total_count > 0 else 0
 
-def cal_mre(outputs,labels):
+def cal_mre(outputs, labels):
     total_mre = 0
+    total_count = 0
     for i in range(len(outputs)):
-        total_mre += np.mean((np.abs(outputs[i]-labels[i]))/(0.01+np.fmax(outputs[i],labels[i]))*100)
-    return total_mre/len(outputs)
-
-def cal_tmre(outputs,labels,geometry):
-    total_tmre = 0
-    for i in range(len(outputs)):
-        total_tmre += np.sum((np.abs(outputs[i]-labels[i]))/(0.01+np.fmax(outputs[i],labels[i]))*100)/np.sum(geometry[i])
-    return total_tmre/len(outputs)
-
+        mask = (outputs[i] > 0) & (labels[i] > 0)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            mre = (np.abs(outputs[i][mask] - labels[i][mask])) / (10 + np.fmax(outputs[i][mask], labels[i][mask])) * 100
+            mre[np.isnan(mre)] = 0  # Handle division by zero or NaNs
+        total_mre += np.sum(mre)
+        total_count += np.sum(mask)
+    return total_mre / total_count if total_count > 0 else 0
 
 def return_mse_mae_mre(data,label):
     # outputを1次元配列にしてリストに入れる
     outputs = []
     for i in range(len(data)):
-        output_i = model(data[i:i+1]).detach().cpu().numpy().ravel()
+        output_i = model(data[i:i + 1]).detach().cpu().numpy().ravel()
+
+        # ハイパス&ローパスフィルタ
+        # output_i[output_i<50] = 0
+        # output_i[output_i>8000] = 8000
+
         outputs.append(output_i)
         print(i)
 
@@ -71,21 +61,33 @@ def return_mse_mae_mre(data,label):
     mae = cal_mae(outputs,labels)
     mre = cal_mre(outputs,labels)
 
-    # dataのgeometryを1次元配列にしてリストに入れる
-    geometry = []
-    for i in range(len(data)):
-        geometry_i = data[i,1,:,:].detach().cpu().numpy().ravel()
-        geometry.append(geometry_i)
-        print(i)
+    return mse,mae,mre
 
-    # tmreの計算
-    tmre = cal_tmre(outputs,labels,geometry)
 
-    return mse,mae,mre,tmre
+# デバイスの設定
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# 学習済みモデルをロードする
+model = Encoder_Decoder_force_(inputDim=3, outputDim=1)
+model = model.to(device)
+
+# マルチGPUをONにする
+'''
+if torch.cuda.device_count() > 1:
+    model = nn.DataParallel(model)
+    torch.backends.cudnn.benchmark = True
+    print('マルチGPUの使用をONにしました')
+'''
+model.load_state_dict(torch.load('./model_weight.pth'))
+
+# dataをloadする(float32→tensor→to.device)
+tr_data = torch.from_numpy((np.load('./tr_data.npy')).astype(np.float32)).to(device)
+tr_label = torch.from_numpy((np.load('./tr_label.npy')).astype(np.float32)).to(device)
+va_data = torch.from_numpy((np.load('./va_data.npy')).astype(np.float32)).to(device)
+va_label = torch.from_numpy((np.load('./va_label.npy')).astype(np.float32)).to(device)
 
 # 学習データに対する指標
 tr_metrics = return_mse_mae_mre(tr_data,tr_label)
-
 # テストデータに対する指標
 va_metrics = return_mse_mae_mre(va_data,va_label)
 
@@ -96,7 +98,6 @@ f.write('training data\n')
 f.write(str(tr_metrics[0])+'\n')
 f.write(str(tr_metrics[1])+'\n')
 f.write(str(tr_metrics[2])+'\n')
-f.write(str(tr_metrics[3])+'\n')
 
 f.write('\n')
 
@@ -104,6 +105,5 @@ f.write('testing data\n')
 f.write(str(va_metrics[0])+'\n')
 f.write(str(va_metrics[1])+'\n')
 f.write(str(va_metrics[2])+'\n')
-f.write(str(va_metrics[3])+'\n')
 
 f.close()

@@ -16,7 +16,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # パラメータ
 batchsize = 32
 lr = 0.001
-epochs = 50
+epochs = 300
 
 
 # 0~9のdatasetをloadする
@@ -35,7 +35,6 @@ for i in range(10):
     geometry_dataset = np.concatenate([geometry_dataset, geometry_dataset_new],0)
     contact_dataset = np.concatenate([contact_dataset, contact_dataset_new],0)
     force_dataset = np.concatenate([force_dataset, force_dataset_new],0)
-
 
 # dataを[12800(=1280×10),3,64,64],labelを[12800(=1280×10),1,64,64]に変形
 label = np.reshape(force_dataset, [force_dataset.shape[0], -1, force_dataset.shape[1], force_dataset.shape[2]])
